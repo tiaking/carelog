@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A1A2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="ケアログ">
+<meta name="description" content="爪切り・散髪などのケア記録アプリ">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<title>ケアログ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0F1A;
+    --surface: #1A1A2E;
+    --surface2: #16213E;
+    --surface3: #0F3460;
+    --accent: #E94560;
+    --accent2: #533483;
+    --accent3: #F5A623;
+    --accent4: #27AE60;
+    --text: #EAEAEA;
+    --subtext: #8892A4;
+    --separator: #2A2A3E;
+    --radius: 18px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: calc(100px + var(--safe-bottom));
+    overflow-x: hidden;
+  }
+
+  /* Background decoration */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -120px;
+    right: -80px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(83,52,131,0.35) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: 120px;
+    left: -100px;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(233,69,96,0.2) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 48px 20px 16px;
+    background: rgba(15,15,26,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--separator);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #E94560, #533483);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-date {
+    font-size: 12px;
+    color: var(--subtext);
+    margin-top: 2px;
+  }
+  .header-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* Section */
+  .section {
+    padding: 20px 16px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--subtext);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Cards */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--separator);
+    animation: fadeInUp 0.4s ease both;
+  }
+  .card:active { transform: scale(0.96); }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-glow {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .card-icon { font-size: 26px; margin-bottom: 10px; display: block; }
+  .card-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+
+  .card-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .badge-urgent { background: rgba(233,69,96,0.2); color: #E94560; }
+  .badge-warning { background: rgba(245,166,35,0.2); color: #F5A623; }
+  .badge-ok { background: rgba(39,174,96,0.2); color: #27AE60; }
+  .badge-fresh { background: rgba(83,52,131,0.25); color: #A78BFA; }
+
+  .card-last { font-size: 10px; color: var(--subtext); margin-top: 4px; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: rgba(26,26,46,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--separator);
+    padding: 10px 20px calc(10px + var(--safe-bottom));
+    z-index: 100;
+  }
+  .add-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #E94560, #533483);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 20px rgba(233,69,96,0.4);
+    transition: opacity 0.1s, transform 0.1s;
+  }
+  .add-fab:active { opacity: 0.85; transform: scale(0.98); }
+
+  /* Sheet */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.active { display: flex; }
+
+  .sheet {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 430px;
+    padding: 12px 20px calc(32px + var(--safe-bottom));
+    animation: slideUp 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+    border: 1px solid var(--separator);
+    border-bottom: none;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--separator);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .sheet-title {
+    font-size: 20px; font-weight: 700;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sheet-sub { font-size: 13px; color: var(--subtext); margin-bottom: 24px; }
+
+  .input-row {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--separator);
+  }
+  .input-row label { font-size: 15px; font-weight: 500; }
+  .input-row input[type="date"] {
+    background: none; border: none;
+    font-size: 15px; color: var(--accent);
+    font-family: inherit; outline: none; cursor: pointer;
+    color-scheme: dark;
+  }
+  .input-row input[type="text"],
+  .input-row input[type="number"] {
+    background: none; border: none;
+    font-size: 15px; color: var(--text);
+    font-family: inherit; outline: none; width: 100%;
+  }
+  .input-row input::placeholder { color: var(--subtext); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 14px; border-radius: 14px;
+    border: none; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: opacity 0.1s, transform 0.1s;
+  }
+  .btn:active { opacity: 0.8; transform: scale(0.98); }
+  .btn-primary { background: linear-gradient(135deg, #E94560, #533483); color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--separator); }
+  .btn-danger { background: rgba(233,69,96,0.12); color: #E94560; border: 1px solid rgba(233,69,96,0.2); margin-top: 8px; width: 100%; }
+
+  /* Emoji picker */
+  .picker-label { font-size: 12px; color: var(--subtext); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+  .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .emoji-btn {
+    width: 46px; height: 46px; border-radius: 12px;
+    border: 2px solid var(--separator);
+    background: var(--surface2);
+    font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .emoji-btn.selected { border-color: var(--accent); background: rgba(233,69,96,0.12); }
+
+  /* Interval chips */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip {
+    padding: 7px 14px; border-radius: 20px;
+    border: 1.5px solid var(--separator);
+    background: var(--surface2);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; color: var(--text);
+    transition: all 0.15s;
+  }
+  .chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* History */
+  .history-wrap {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--separator);
+    overflow: hidden;
+  }
+  .history-item {
+    display: flex; align-items: center;
+    padding: 13px 16px; gap: 12px;
+    border-bottom: 1px solid var(--separator);
+    animation: fadeInUp 0.3s ease both;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .h-icon { font-size: 18px; }
+  .h-name { font-size: 14px; font-weight: 500; flex: 1; }
+  .h-date { font-size: 12px; color: var(--subtext); }
+  .h-del {
+    background: none; border: none;
+    color: var(--subtext); font-size: 16px;
+    cursor: pointer; padding: 4px 8px; border-radius: 8px;
+  }
+  .h-del:active { background: rgba(233,69,96,0.1); color: var(--accent); }
+
+  .empty { text-align: center; padding: 32px; color: var(--subtext); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+  /* Ripple effect */
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: inherit;
+  }
+  .card:active::after { opacity: 1; }
+
+  /* Snackbar */
+  .snackbar {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #323246;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 300;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .snackbar.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>ケアログ</h1>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div class="header-badge" id="urgentBadge" style="display:none"></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">ケアアイテム</div>
+  <div class="cards-grid" id="cardsGrid"></div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <div class="section-label">最近の記録</div>
+  <div class="history-wrap" id="historyList"></div>
+</div>
+
+<div class="bottom-nav">
+  <button class="add-fab" onclick="openAddItem()">＋　アイテムを追加</button>
+</div>
+
+<!-- Log Sheet -->
+<div class="overlay" id="logOverlay" onclick="closeOverlays(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="logTitle"></div>
+    <div class="sheet-sub" id="logSub"></div>
+    <div class="input-row">
+      <label>実施日</label>
+      <input type="date" id="logDate">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeLog()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveLog()">記録する</button>
+    </div>
+    <button class="btn btn-danger" onclick="confirmDeleteItem()" id="deleteItemBtn">このアイテムを削除</button>
+    <button class="btn btn-danger" onclick="deleteItem()" id="confirmDeleteBtn" style="display:none;background:rgba(233,69,96,0.25)">本当に削除する</button>
+  </div>
+</div>
+
+<!-- Add Item Sheet -->
+<div class="overlay" id="addOverlay" onclick="closeOverlays(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">アイテムを追加</div>
+    <div class="sheet-sub">記録したいケアを登録してください</div>
+
+    <div class="picker-label">アイコン</div>
+    <div class="emoji-picker" id="emojiPicker">
+      <button class="emoji-btn" onclick="selectEmoji('💅')">💅</button>
+      <button class="emoji-btn selected" onclick="selectEmoji('✂️')">✂️</button>
+      <button class="emoji-btn" onclick="selectEmoji('🦶')">🦶</button>
+      <button class="emoji-btn" onclick="selectEmoji('🪒')">🪒</button>
+      <button class="emoji-btn" onclick="selectEmoji('🦷')">🦷</button>
+      <button class="emoji-btn" onclick="selectEmoji('🛁')">🛁</button>
+      <button class="emoji-btn" onclick="selectEmoji('💊')">💊</button>
+      <button class="emoji-btn" onclick="selectEmoji('🏃')">🏃</button>
+      <button class="emoji-btn" onclick="selectEmoji('🧴')">🧴</button>
+      <button class="emoji-btn" onclick="selectEmoji('👀')">👀</button>
+      <button class="emoji-btn" onclick="selectEmoji('🩺')">🩺</button>
+      <button class="emoji-btn" onclick="selectEmoji('🌿')">🌿</button>
+    </div>
+
+    <div class="picker-label">名前</div>
+    <div class="input-row">
+      <input type="text" id="newItemName" placeholder="例：爪切り、洗髪など" maxlength="20">
+    </div>
+
+    <div class="picker-label">推奨間隔</div>
+    <div class="chips" id="intervalChips">
+      <button class="chip" onclick="selectInterval(1)">毎日</button>
+      <button class="chip" onclick="selectInterval(3)">3日</button>
+      <button class="chip" onclick="selectInterval(7)">1週間</button>
+      <button class="chip selected" onclick="selectInterval(14)">2週間</button>
+      <button class="chip" onclick="selectInterval(30)">1ヶ月</button>
+      <button class="chip" onclick="selectInterval(90)">3ヶ月</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="document.getElementById('addOverlay').classList.remove('active')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveNewItem()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+
+<script>
+const DEFAULT_ITEMS = [
+  { id: 'nails', name: '爪切り（手）', icon: '💅', interval: 14 },
+  { id: 'nails_feet', name: '爪切り（足）', icon: '🦶', interval: 21 },
+  { id: 'haircut', name: '散髪', icon: '✂️', interval: 30 },
+  { id: 'shave', name: 'ひげ剃り', icon: '🪒', interval: 3 },
+  { id: 'teeth', name: '歯磨き（念入り）', icon: '🦷', interval: 1 },
+];
+
+let state = { items: [], logs: [] };
+let editingItemId = null;
+let selectedEmoji = '✂️';
+let selectedInterval = 14;
+
+function load() {
+  try {
+    const s = localStorage.getItem('careLog_android_v1');
+    if (s) state = JSON.parse(s);
+    else { state.items = DEFAULT_ITEMS.map(i => ({...i})); state.logs = []; }
+  } catch(e) { state.items = DEFAULT_ITEMS.map(i => ({...i})); state.logs = []; }
+}
+function save() { localStorage.setItem('careLog_android_v1', JSON.stringify(state)); }
+
+function getDaysSince(dateStr) {
+  if (!dateStr) return null;
+  return Math.floor((new Date() - new Date(dateStr)) / 86400000);
+}
+function getStatus(days, interval) {
+  if (days === null || days >= interval) return 'urgent';
+  if (days >= interval * 0.75) return 'warning';
+  if (days >= interval * 0.5) return 'ok';
+  return 'fresh';
+}
+function fmtDate(dateStr) {
+  if (!dateStr) return '未記録';
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function getLastLog(itemId) {
+  const logs = state.logs.filter(l => l.itemId === itemId);
+  return logs.length ? logs.sort((a,b) => b.date.localeCompare(a.date))[0] : null;
+}
+
+const glowColors = {
+  urgent: 'linear-gradient(90deg,#E94560,#c73652)',
+  warning: 'linear-gradient(90deg,#F5A623,#d4891c)',
+  ok: 'linear-gradient(90deg,#27AE60,#1e8a4c)',
+  fresh: 'linear-gradient(90deg,#533483,#A78BFA)',
+};
+const badgeLabels = { urgent: '要ケア', warning: 'もうすぐ', ok: '余裕あり', fresh: '✓ 完了' };
+
+function renderCards() {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = '';
+  let urgentCount = 0;
+
+  state.items.forEach((item, i) => {
+    const last = getLastLog(item.id);
+    const days = getDaysSince(last?.date);
+    const status = getStatus(days, item.interval);
+    if (status === 'urgent') urgentCount++;
+
+    const daysLabel = days === null ? '未記録' : days === 0 ? '今日' : `${days}日前`;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.innerHTML = `
+      <div class="card-glow" style="background:${glowColors[status]}"></div>
+      <span class="card-icon">${item.icon}</span>
+      <div class="card-name">${item.name}</div>
+      <div class="card-badge badge-${status}">${badgeLabels[status]}</div>
+      <div class="card-last">${daysLabel} ／ ${item.interval}日ごと</div>
+    `;
+    card.onclick = () => openLog(item.id);
+    grid.appendChild(card);
+  });
+
+  const badge = document.getElementById('urgentBadge');
+  if (urgentCount > 0) {
+    badge.textContent = `${urgentCount}件 要ケア`;
+    badge.style.display = 'block';
+  } else badge.style.display = 'none';
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const recent = [...state.logs].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 15);
+  if (!recent.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>まだ記録がありません</div>';
+    return;
+  }
+  list.innerHTML = recent.map(log => {
+    const item = state.items.find(i => i.id === log.itemId);
+    if (!item) return '';
+    return `<div class="history-item">
+      <span class="h-icon">${item.icon}</span>
+      <span class="h-name">${item.name}</span>
+      <span class="h-date">${fmtDate(log.date)}</span>
+      <button class="h-del" onclick="deleteLog('${log.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function updateHeaderDate() {
+  const d = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('headerDate').textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+
+function render() { renderCards(); renderHistory(); }
+
+function showSnackbar(msg) {
+  const el = document.getElementById('snackbar');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Log
+function openLog(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  editingItemId = itemId;
+  document.getElementById('logTitle').textContent = item.icon + '　' + item.name;
+  const last = getLastLog(itemId);
+  document.getElementById('logSub').textContent = last ? `最終記録: ${fmtDate(last.date)}` : '未記録';
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('deleteItemBtn').style.display = 'block';
+  document.getElementById('confirmDeleteBtn').style.display = 'none';
+  document.getElementById('logOverlay').classList.add('active');
+}
+function closeLog() {
+  document.getElementById('logOverlay').classList.remove('active');
+  editingItemId = null;
+}
+function saveLog() {
+  const date = document.getElementById('logDate').value;
+  if (!date || !editingItemId) return;
+  state.logs.push({ id: Date.now().toString(), itemId: editingItemId, date });
+  save(); render(); closeLog();
+  showSnackbar('✓ 記録しました');
+}
+function confirmDeleteItem() {
+  document.getElementById('deleteItemBtn').style.display = 'none';
+  document.getElementById('confirmDeleteBtn').style.display = 'block';
+}
+function deleteItem() {
+  state.items = state.items.filter(i => i.id !== editingItemId);
+  state.logs = state.logs.filter(l => l.itemId !== editingItemId);
+  save(); render(); closeLog();
+  showSnackbar('アイテムを削除しました');
+}
+function deleteLog(logId) {
+  state.logs = state.logs.filter(l => l.id !== logId);
+  save(); render();
+  showSnackbar('記録を削除しました');
+}
+
+// Add Item
+function openAddItem() {
+  selectedEmoji = '✂️'; selectedInterval = 14;
+  document.getElementById('newItemName').value = '';
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('.emoji-btn:nth-child(2)').classList.add('selected');
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('selected', b.textContent === '2週間'));
+  document.getElementById('addOverlay').classList.add('active');
+}
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === e));
+}
+function selectInterval(d) {
+  selectedInterval = d;
+  const map = {1:'毎日',3:'3日',7:'1週間',14:'2週間',30:'1ヶ月',90:'3ヶ月'};
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('selected', b.textContent === map[d]));
+}
+function saveNewItem() {
+  const name = document.getElementById('newItemName').value.trim();
+  if (!name) { document.getElementById('newItemName').focus(); return; }
+  state.items.push({ id: 'c_' + Date.now(), name, icon: selectedEmoji, interval: selectedInterval });
+  save(); render();
+  document.getElementById('addOverlay').classList.remove('active');
+  showSnackbar('✓ アイテムを追加しました');
+}
+
+function closeOverlays(e) {
+  document.getElementById('logOverlay').classList.remove('active');
+  document.getElementById('addOverlay').classList.remove('active');
+  editingItemId = null;
+}
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+load(); updateHeaderDate(); render();
+</script>
+</body>
+</html>
